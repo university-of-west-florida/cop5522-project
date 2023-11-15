@@ -1,7 +1,7 @@
 CC=g++
 CFLAG= -Wall -I. -O0
 
-TARGETS=samplesort # add your target here
+TARGETS=samplesort
 
 all: $(TARGETS)
 
