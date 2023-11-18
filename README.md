@@ -1,1 +1,1 @@
-# cop5522-project
+# cop5522-project MPI stuff
