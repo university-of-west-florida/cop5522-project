@@ -1,6 +1,7 @@
 # cop5522-project MPI stuff
 
 Some tinkering I've done with MPI
+
 NOTE: This code is not sorting in parallel yet.
 I just wanted to gain some familiarity with MPI before I tried to modify the "samplesort" function.  
 There is no comments yet - I mostly needed it clean so that I could move things around and test easier.
