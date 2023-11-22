@@ -1,0 +1,23 @@
+#!/bin/bash
+make clean
+make
+
+#start=$(date +%s.%N); \
+#  sleep 0.1s; \
+#  dur=$(echo "$(date +%s.%N) - $start" | bc); \
+#  printf "Execution time: %.6f seconds\n" $dur
+
+#mpiexec -n 8 ./samplesort 409 800 5
+#mpiexec -n 8 ./samplesort 80000 70000
+
+num_proc_array=(1 2 4 8 12 16 20)
+
+for num_proc in ${num_proc_array[@]}
+do
+	start=$(date +%s.%N); \
+		mpiexec -n $num_proc ./samplesort 2000000 500 5
+
+	dur=$(echo "$(date +%s.%N) - $start" | bc); \
+
+	printf "Execution time: %.6f seconds\n" $dur
+done
