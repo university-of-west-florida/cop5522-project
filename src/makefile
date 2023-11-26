@@ -1,5 +1,5 @@
 CC=g++
-CFLAG= -Wall -I. -O0
+CFLAG= -Wall -I. -O0 -pthread
 
 TARGETS=samplesort
 
@@ -8,7 +8,7 @@ all: $(TARGETS)
 samplesort: samplesort.o microtime.o
 	$(CC) -g3 -o $@ $^
 
-samplesort.o: samplesort.cpp microtime.h
+samplesort.o: samplesort.cpp microtime.h samplesort.h
 	$(CC) $(CFLAG) -g3 -c $<
 
 microtime.o: microtime.cpp microtime.h
