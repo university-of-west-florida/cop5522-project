@@ -50,3 +50,14 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+/.vs/cop5522-project/FileContentIndex
+/.vs/cop5522-project/v17/ipch/AutoPCH/b8635aa291491b48
+/.vs/cop5522-project/v17/ipch/AutoPCH/cf99e56e98811bcb
+/.vs/cop5522-project/v17/ipch/AutoPCH/e1d625dae574bf5e
+/.vs/cop5522-project/v17
+/.vs
+/obj/x64/Debug
+*.sln
+*.vcxproj
+*.filters
+*.user
