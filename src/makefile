@@ -1,5 +1,5 @@
 CC=g++
-CFLAG= -Wall -I. -O0 -pthread
+CFLAG= -Wall -I. -O0 -pthread -std=c++17
 
 TARGETS=samplesort
 
