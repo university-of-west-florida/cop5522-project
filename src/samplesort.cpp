@@ -29,11 +29,50 @@ void printVector(std::vector<T> &toPrint)
 }
 
 
+template<typename T>
+void printAny(T toPrint, std::string name)
+{
+    try
+    {
+        std::cout << name << " = " << std::to_string(toPrint) << "\t";
+    }
+    catch (...)
+    {
+        std::cout << "ERROR: Unable to print variable: " << name << std::endl;
+    }
+}
+
+void printDebug()
+{
+    std::cout << std::endl;
+}
+
+template<typename T, typename... Args>
+void printDebug(T toPrint, Args... args)
+{
+    std::string name = currentDebugNames.substr(0, currentDebugNames.find(","));
+    currentDebugNames.erase(0, currentDebugNames.find(",") + 1);
+    printAny(toPrint, name);
+    printDebug(args...);
+}
+
+
 // Initializing vector with numNums values which are below randomNumBound
-void generateRandNums(std::vector<int> &inputNums, int numNums, int randomNumBound) {
+//void generateRandNums(std::vector<int> &inputNums, int numNums, int randomNumBound) {
+//    // Init random number generator the assign them with the specified bound
+//    int i;
+//    srand(time(0));
+//    for (i = 0; i < numNums; ++i)
+//        inputNums.push_back(rand() % randomNumBound);
+//}
+
+
+// Initializing vector with numNums values which are below randomNumBound
+void generateRandNums(std::vector<int> &inputNums, int numNums, int randomNumBound, long seed) {
     // Init random number generator the assign them with the specified bound
     int i;
-    srand(time(0));
+    //srand(time(0));
+    srand(seed);
     for (i = 0; i < numNums; ++i)
         inputNums.push_back(rand() % randomNumBound);
 }
@@ -66,34 +105,50 @@ void* testFunc(void* vArgs)
     // Convert void* back to struct*
     testArgs* tArgs = static_cast<testArgs*>(vArgs);
     int j = tArgs->j;
+    int i = tArgs->i;
     int numOfBuckets = tArgs->numOfBuckets;
+    pthread_mutex_t mtx = tArgs->mtx;
 
     // Copy out vectors for easier access
     std::vector<int>* inputNums = tArgs->inputNums;
     std::vector<int>* splitters = tArgs->splitters;
     std::vector<std::vector<int>>* buckets = tArgs->buckets;
 
-    for (int k = 0; k < numOfBuckets - 1; ++k) {
-        if ((*inputNums)[j] <= (*splitters)[k]) {
+    for (int k = 0; k < numOfBuckets - 1; ++k)
+    {
+        //DEBUG(j, k, (*inputNums)[j], (*splitters)[k]);
+        if ((*inputNums)[j] <= (*splitters)[k])
+        {
+            //std::cout << "pushing back onto bucket[" << std::to_string(k) << "]" << std::endl;
+            pthread_mutex_lock(&(mtx));
             (*buckets)[k].push_back((*inputNums)[j]);
+            pthread_mutex_unlock(&(mtx));
             break;
         }
         if (k == numOfBuckets - 2)
         {
+            pthread_mutex_lock(&(mtx));
             (*buckets)[numOfBuckets - 1].push_back((*inputNums)[j]);
+            pthread_mutex_unlock(&(mtx));
         }
     }
 }
 
 void* samplesort(void* vArgs) {
     sampleSortArgs* args = (sampleSortArgs*)vArgs;
-    
+    testArgs tArgs;
+    tArgs.mtx = args->mtx;
+
     std::vector<int>* inputNums = args->inputNums;
     int start = args->start;
     int end = args->end;
     int numOfBuckets = args->numOfBuckets;
     int samplesPerBucket = args->samplesPerBucket;
     int i, j, k;
+
+    if (start > 20) return nullptr;
+
+    //DEBUG(start, end, numOfBuckets, samplesPerBucket);
 
     // numNums is the number of numbers that we are sorting
     int numNums = end - start;
@@ -106,7 +161,11 @@ void* samplesort(void* vArgs) {
         }
         // If there are fewer inputNums than specified numOfBuckets, then just bubblesort the rest bc it is likely a small set left
         else {
+            std::cout << "InputNums pre bubblesort" << std::endl;
+            printVector(*inputNums);
             bubblesort((*inputNums), start, end);
+            std::cout << "InputNums pre bubblesort" << std::endl;
+            printVector(*inputNums);
             return nullptr;
         }
     }
@@ -117,8 +176,12 @@ void* samplesort(void* vArgs) {
     for (i = start; i < start + (numOfBuckets - 1) * samplesPerBucket; ++i)
         sortedSamples[i - start] = (*inputNums)[i];
 
+    std::cout << "sortedSamples pre bubblesort" << std::endl;
+    printVector(sortedSamples);
     // Sorting the collection of samples with bubble sort
     bubblesort(sortedSamples, 0, (numOfBuckets - 1) * samplesPerBucket);
+    std::cout << "sortedSamples post bubblesort" << std::endl;
+    printVector(sortedSamples);
 
     // Condensing the sortedSamples into just splitters between the buckets
     std::vector<int> splitters(numOfBuckets - 1);
@@ -129,36 +192,42 @@ void* samplesort(void* vArgs) {
     // Going through inputNums and sorting each value into a bucket (each bucket is stored as a vector)
     // NOTE: The initial double nesting of for loops is not necessary for serial purposes. I could have made the first
     //        two for loops into a single for loop, but I think it will be easier to parallelize it when set up this way
-    std::vector<std::vector<int>> buckets(numOfBuckets);
-    testArgs tArgs = { inputNums, &splitters, &buckets };
+    std::vector<std::vector<int>> buckets(numOfBuckets, std::vector<int>());
+    /* = { inputNums, &splitters, &buckets }*/;
     tArgs.numOfBuckets = numOfBuckets;
+    tArgs.inputNums = inputNums;
+    tArgs.splitters = &splitters;
+    tArgs.buckets = &buckets;
+    tArgs.start = start;
+    tArgs.numNums = numNums;
     // This breaks the initial inputNums into equal segments, then loops through each value and puts it into the bucket it belongs to
     for (i = 0; i < numOfBuckets; ++i)
     {
         for (j = start + (i * (numNums / numOfBuckets)); j < start + ((i + 1) * (numNums / numOfBuckets)); ++j)
         {
             tArgs.j = j;
+            tArgs.i = i;
 
-            pthread_mutex_lock(&(args->mtx));
-            pthread_t* newThread = new pthread_t();
-
-            // Thread number is for debug only
-            // TODO:: Remove after testing
-            tArgs.threadNum = numThreads++;
+            //pthread_t* newThread = new pthread_t();
+            testFunc((void*)&tArgs);
 
             // Save off threads to join them after being spawned
-            args->threads->push_back(newThread);
+            //args->threads->push_back(newThread);
 
             // Start up thread
-            pthread_create(newThread, NULL, testFunc, static_cast<void*>(& tArgs));
-            pthread_mutex_unlock(&(args->mtx));
+            //pthread_create(newThread, NULL, testFunc, static_cast<void*>(&tArgs));
         }
+
+        // Wait for all of our threads to complete
+        for (const auto& thread : *(args->threads))
+        {
+            pthread_join(*thread, NULL);
+        }
+        args->threads->clear();
+
+        printVector(buckets[i]);
     }
-    // Wait for all of our threads to complete
-    for (const auto& thread : *(args->threads))
-    {
-        pthread_join(*thread, NULL);
-    }
+    
 
     // Handling the remainder values at the end of the list which were not accounted for above
     // The inner for loop is the same as above bc it just sorts the value in question into the right bucket
@@ -198,8 +267,8 @@ void* samplesort(void* vArgs) {
 int main(int argc, char** argv) {
     double t, time1, time2;
 
-    if (argc != 4) {
-        fprintf(stderr, "USAGE: %s <numNums> <randomNumBound> <samplesPerBucket>\n", argv[0]);
+    if (argc != 4 && argc != 5) {
+        fprintf(stderr, "USAGE: %s <numNums> <randomNumBound> <samplesPerBucket> (opt)<random seed>\n", argv[0]);
         exit(1);
     }
 
@@ -207,13 +276,21 @@ int main(int argc, char** argv) {
     int numNums = atoi(argv[1]);
     int randomNumBound = atoi(argv[2]);
     int samplesPerBucket = atoi(argv[3]);
+    long randSeed;
+
+    try { randSeed = (argc == 5) ? static_cast<long>(atoi(argv[4])) : time(0); }
+    catch (...) { long randSeed = time(0); }
+    
+    DEBUG(randSeed);
+
     std::vector<pthread_t*> threads;
     pthread_mutex_t mtx;
+    pthread_mutex_init(&mtx, NULL);
 
     // Generating an array of numNums random numbers which are bounded by randomNumBound
     std::vector<int> inputNums;
-    generateRandNums(inputNums, numNums, randomNumBound);
-    printVector(inputNums);
+    generateRandNums(inputNums, numNums, randomNumBound, randSeed);
+    //printVector(inputNums);
 
     // Getting the current hardware's number of logical processors
     int numOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
@@ -228,7 +305,7 @@ int main(int argc, char** argv) {
     time2 = microtime();
 
     //printArray(inputNums, numNums);
-    printVector(inputNums);
+    //printVector(inputNums);
 
     t = time2 - time1;
 

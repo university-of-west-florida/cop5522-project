@@ -2,7 +2,7 @@ CC=g++
 CFLAG= -Wall -I. -O0 -fopenmp -lm
 MPICC=mpic++
 MPICFLAG= -Wall -I. -O0
-PTHREADCFLAG= -Wall -I. -O0 -pthread
+PTHREADCFLAG= -Wall -I. -O0 -pthread -std=c++17
 
 TARGETS=samplesort open_mp_samplesort dw_open_mp_samplesort mpi_samplesort
 
