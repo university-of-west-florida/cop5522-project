@@ -18,7 +18,8 @@ do
 #		mpiexec -n $num_proc ./samplesort 2000000 500 5
 #		mpiexec -n $num_proc ./samplesort 400000 10 10
 #		mpiexec -n $num_proc ./samplesort 1000000 500 5
-		mpiexec -n $num_proc ./samplesort 8000000 1000 10
+#		mpiexec -n $num_proc ./samplesort 8000000 1000 10
+                mpiexec -n $num_proc ./samplesort 32000000 5000 10
 
 	dur=$(echo "$(date +%s.%N) - $start" | bc); \
 
