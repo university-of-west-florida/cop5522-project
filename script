@@ -1,0 +1,21 @@
+#!/bin/bash
+make clean
+make
+
+#NOTE: must use "chmod +x script" to make script executable in linux terminal
+
+num_proc_array=(1 2 4 8 12 16 20)
+
+for num_proc in ${num_proc_array[@]}
+do
+        start=$(date +%s.%N); \
+               ./samplesort $num_proc 2000000 500 5
+#              ./samplesort $num_proc 400000 10 10
+#              ./samplesort $num_proc 1000000 500 5
+#              ./samplesort $num_proc 8000000 1000 10
+#              ./samplesort $num_proc 32000000 5000 10
+
+        dur=$(echo "$(date +%s.%N) - $start" | bc); \
+
+        printf "Execution time: %.6f seconds\n" $dur
+done
