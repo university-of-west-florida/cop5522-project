@@ -5,7 +5,7 @@ GCC
 Run the "Make" command in cop5522-project/src
 
 # Command
-./samplesort numNums randomNumBound samplesPerBucket  
+./samplesort numOfProcessors numNums randomNumBound samplesPerBucket
   
 numNums - The number of numbers to sort (They will be automatically generated)  
 randomNumBound - The bound of the generated integers (All numbers will fall within [0, randomNumBound])  
