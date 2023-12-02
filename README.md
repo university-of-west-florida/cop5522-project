@@ -6,6 +6,9 @@ Run the "Make" command in cop5522-project/src
 
 # Command
 ./samplesort numOfProcessors numNums randomNumBound samplesPerBucket
+
+# Command Example
+./samplesort 8 2000000 500 5
   
 numNums - The number of numbers to sort (They will be automatically generated)  
 randomNumBound - The bound of the generated integers (All numbers will fall within [0, randomNumBound])  
