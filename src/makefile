@@ -4,7 +4,7 @@ MPICC=mpic++
 MPICFLAG= -Wall -I. -O0
 PTHREADCFLAG= -Wall -I. -O0 -pthread -std=c++17
 
-TARGETS=samplesort open_mp_samplesort dw_open_mp_samplesort mpi_samplesort
+TARGETS=samplesort open_mp_samplesort dw_open_mp_samplesort mpi_samplesort samplesortCPPThreads samplesortPThreads
 
 all: $(TARGETS)
 
@@ -25,6 +25,18 @@ open_mp_samplesort: open_mp.o microtime.o
 
 open_mp.o: open_mp.cpp
 	$(CC) $(CFLAG) -fopenmp -g3 -c $<  # Add -fopenmp flag
+
+samplesortCPPThreads: samplesortCPPThreads.o microtime.o
+	$(CC) -g3 -o $@ $^
+
+samplesortCPPThreads.o: samplesortCPPThreads.cpp microtime.h samplesortCPPThreads.hpp
+	$(CC) $(PTHREADCFLAG) -g3 -c $<
+
+samplesortPThreads: samplesortPThreads.o microtime.o
+	$(CC) -g3 -o $@ $^
+
+samplesortPThreads.o: samplesortPThreads.cpp microtime.h samplesortPThreads.hpp
+	$(CC) $(PTHREADCFLAG) -g3 -c $<
 
 microtime.o: microtime.cpp microtime.h
 	$(CC) $(CFLAG) -g3 -c $<
