@@ -18,11 +18,6 @@ int getRandInt(int min, int max)
     return rand() % range + min;
 }
 
-int ceiling(int x, int y)
-{
-    return (x + y - 1) / y;
-}
-
 void buildBuckets(std::vector<int>* valsToSort, std::vector<std::vector<int>>* buckets, std::vector<std::vector<int>>* splitters,
     long long offset, long long indexRange, int numOfBuckets, int samplesPerBucket, std::mutex* mtx)
 {
@@ -129,48 +124,6 @@ void samplesort(std::vector<int>* toSort, int samplesPerBucket, int numOfBuckets
 
     threads.clear();
 
-
-    /*for (auto valToSort : *toSort)
-    {
-        bool wasTooBig = false;
-        bool wasTooSmall = false;
-
-        for (int i = 0; i < numOfBuckets; i++)
-        {
-            if (valToSort < splitters[i][0])
-            {
-                if (wasTooBig || i == 0)
-                {
-                    splitters[i][0] = valToSort;
-                    buckets[i].push_back(valToSort);
-                    break;
-                }
-                else
-                {
-                    wasTooSmall = true;
-                }
-            }
-            else if (valToSort > splitters[i][samplesPerBucket - 1])
-            {
-                if (wasTooSmall || i == numOfBuckets - 1)
-                {
-                    splitters[i][samplesPerBucket - 1] = valToSort;
-                    buckets[i].push_back(valToSort);
-                    break;
-                }
-                else
-                {
-                    wasTooBig = true;
-                }
-            }
-            else
-            {
-                buckets[i].push_back(valToSort);
-                break;
-            }
-        }
-    }*/
-
     int index = 0;
     int lastBucketSize = 0;
     for (int i = 0; i < numOfBuckets; i++)
@@ -216,33 +169,56 @@ int main(int argc, char** argv)
     // Getting the current hardware's number of logical processors
     int numOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
 
+    std::vector<int> toSort(numNums);
+
     // Set seed if available
     if (argc >= 5)
     {
         try
         {
             srand(std::stoi(argv[4]));
+            // Serially add in random numbers to the vector
+            for (int i = 0; i < numNums; i++)
+                toSort[i] = getRandInt(0, randomNumBound);
         }
         catch (...)
         {
-            // Value entered is not an int
+            // Value entered is not an int -- maybe alert user?
+            std::cout << "ERROR: Entered invalid seed" << std::endl;
+            exit(1);
         }
     }
-
-    std::vector<int> toSort(numNums);
-
-    // Speed up the building of the sortable vector
-    std::vector<std::thread*> assignThreads;
-    for (long long i = 0; i < numOfProcessors; i++)
+    // Else, use threads to speed up the building of the vector with extra random elements
+    else
     {
-        // Perform additional randomization for the vector assignments or else we would just end up with a repeating pattern
-        int deepRandSeed = getRandInt(0, 5 * numOfProcessors);
-        assignThreads.push_back(new std::thread(generateVector, &toSort, i * numNums / numOfProcessors, numNums / numOfProcessors, deepRandSeed, randomNumBound));
+        // Speed up the building of the sortable vector
+        std::vector<pthread_t*> assignThreads;
+        for (long long i = 0; i < numOfProcessors; i++)
+        {
+            // Perform additional randomization for the vector assignments or else we would just end up with a repeating pattern
+            int deepRandSeed = getRandInt(0, 5 * numOfProcessors);
+
+            // Speed up the building of the sortable vector
+            std::vector<std::thread*> assignThreads;
+            for (long long i = 0; i < numOfProcessors; i++)
+            {
+                // Perform additional randomization for the vector assignments or else we would just end up with a repeating pattern
+                int deepRandSeed = getRandInt(0, 5 * numOfProcessors);
+                assignThreads.push_back(new std::thread(generateVector, &toSort, i * numNums / numOfProcessors, numNums / numOfProcessors, deepRandSeed, randomNumBound));
+            }
+            for (auto t : assignThreads)
+            {
+                t->join();
+            }
+        }
+        for (auto t : assignThreads)
+        {
+            pthread_join(*t, NULL);
+            delete[] t;
+        }
+        assignThreads.clear();
     }
-    for (auto t : assignThreads)
-    {
-        t->join();
-    }
+
 
     // measure time
     time1 = microtime();

@@ -194,7 +194,7 @@ void samplesort(std::vector<int>* toSort, int samplesPerBucket, int numOfBuckets
 
     // Wait for all threads to finish their sorting and combining back to original vector
     // and delete and clear them from the vector
-    for (auto t : threads)
+    for (const auto& t : threads)
     {
         pthread_join(*t, NULL);
         delete[] t;
@@ -236,50 +236,59 @@ int main(int argc, char** argv)
     // Getting the current hardware's number of logical processors
     int numOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
     
+
+    std::vector<int> toSort(numNums);
+
     // Set seed if available
     if (argc >= 5)
     {
         try
         {
             srand(std::stoi(argv[4]));
+            // Serially add in random numbers to the vector
+            for (int i = 0; i < numNums; i++)
+                toSort[i] = getRandInt(0, randomNumBound);
         }
         catch (...)
         {
-            // Value entered is not an int
-        }
-    }
-
-    std::vector<int> toSort(numNums);
-
-    // Speed up the building of the sortable vector
-    std::vector<pthread_t*> assignThreads;
-    for (long long i = 0; i < numOfProcessors; i++)
-    {
-        // Perform additional randomization for the vector assignments or else we would just end up with a repeating pattern
-        int deepRandSeed = getRandInt(0, 5 * numOfProcessors);
-
-        generateVectorArgs* gArgs = new generateVectorArgs();
-        gArgs->vec        = &toSort;
-        gArgs->offset     = i * numNums / numOfProcessors;
-        gArgs->indexRange = numNums / numOfProcessors;
-        gArgs->randSeed   = deepRandSeed;
-        gArgs->upperBound = randomNumBound;
-
-        pthread_t* newThread = new pthread_t();
-        assignThreads.push_back(newThread);
-
-        if (pthread_create(newThread, NULL, generateVector, static_cast<void*>(gArgs)))
-        {
-            std::cout << "Pthread_create error: " << strerror(errno) << std::endl;
+            // Value entered is not an int -- maybe alert user?
+            std::cout << "ERROR: Entered invalid seed" << std::endl;
             exit(1);
         }
     }
-    for (auto t : assignThreads)
+    // Else, use threads to speed up the building of the vector with extra random elements
+    else
     {
-        pthread_join(*t, NULL);
-        delete[] t;
+        // Speed up the building of the sortable vector
+        std::vector<pthread_t*> assignThreads;
+        for (long long i = 0; i < numOfProcessors; i++)
+        {
+            // Perform additional randomization for the vector assignments or else we would just end up with a repeating pattern
+            int deepRandSeed = getRandInt(0, 5 * numOfProcessors);
+
+            generateVectorArgs* gArgs = new generateVectorArgs();
+            gArgs->vec = &toSort;
+            gArgs->offset = i * numNums / numOfProcessors;
+            gArgs->indexRange = numNums / numOfProcessors;
+            gArgs->randSeed = deepRandSeed;
+            gArgs->upperBound = randomNumBound;
+
+            pthread_t* newThread = new pthread_t();
+            assignThreads.push_back(newThread);
+
+            if (pthread_create(newThread, NULL, generateVector, static_cast<void*>(gArgs)))
+            {
+                std::cout << "Pthread_create error: " << strerror(errno) << std::endl;
+                exit(1);
+            }
+        }
+        for (auto t : assignThreads)
+        {
+            pthread_join(*t, NULL);
+            delete[] t;
+        }
+        assignThreads.clear();
     }
-    assignThreads.clear();
 
     // measure time
     time1 = microtime();
