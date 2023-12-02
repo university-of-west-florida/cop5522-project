@@ -18,11 +18,6 @@ int getRandInt(int min, int max)
     return rand() % range + min;
 }
 
-int ceiling(int x, int y)
-{
-    return (x + y - 1) / y;
-}
-
 void* buildBuckets(void* vArgs)
 {
     buildBucketsArgs* bArgs = (buildBucketsArgs*)vArgs;
