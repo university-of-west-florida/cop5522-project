@@ -61,3 +61,5 @@ dkms.conf
 *.vcxproj
 *.filters
 *.user
+
+OldFunctions.txt
