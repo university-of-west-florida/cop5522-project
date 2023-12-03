@@ -1,7 +1,7 @@
 CC=g++
-CFLAG= -Wall -I. -O0 -fopenmp -lm
+CFLAG= -Wall -I. -O0
 MPICC=mpic++
-MPICFLAG= -Wall -I. -O0
+OMPCFLAG= -Wall -I. -O0 -fopenmp -lm
 PTHREADCFLAG= -Wall -I. -O0 -pthread -std=c++17
 
 TARGETS=samplesort open_mp_samplesort dw_open_mp_samplesort mpi_samplesort samplesortCPPThreads samplesortPThreads
@@ -15,10 +15,10 @@ samplesort.o: samplesort.cpp microtime.h samplesort.h
 	$(CC) $(CFLAG) -g3 -c $<
 
 dw_open_mp_samplesort: dw_open_mp_samplesort.o microtime.o
-	$(CC) $(CFLAG) -g3 -o $@ $^
+	$(CC) $(OMPCFLAG) -g3 -o $@ $^
 
 dw_open_mp_samplesort.o: dw_open_mp_samplesort.cpp microtime.h
-	$(CC) $(CFLAG) -g3 -c $<
+	$(CC) $(OMPCFLAG) -g3 -c $<
 
 open_mp_samplesort: open_mp.o microtime.o
 	$(CC) $(CFLAG) -fopenmp -g3 -o $@ $^ -lm  # Add -fopenmp and -lm for math library
@@ -45,10 +45,10 @@ mpi_samplesort: mpi_samplesort.o mpi_microtime.o
 	$(MPICC) -g3 -o $@ $^
 
 mpi_samplesort.o: mpi_samplesort.cpp microtime.h
-	$(MPICC) $(MPICFLAG) -g3 -c $<
+	$(MPICC) $(CFLAG) -g3 -c $<
 
 mpi_microtime.o: microtime.cpp microtime.h
-	$(MPICC) $(MPICFLAG) -g3 -c $<
+	$(MPICC) $(CFLAG) -g3 -c -o $@ $<
 
 clean:
 	rm -f *.o *~ core $(TARGETS)
