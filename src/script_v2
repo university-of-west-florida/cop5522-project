@@ -1,0 +1,81 @@
+#!/bin/bash
+make clean
+make
+
+#NOTE: must use "chmod +x script" to make script executable in linux terminal
+
+data_sizes=(100000 200000 400000)
+#data_sizes=(100000)
+samples_per_bucket=$((10 ))
+num_range=$(( 10000))
+
+echo "Number range: $num_range"
+echo "Samples per bucket: $samples_per_bucket"
+
+echo "----------------------"
+echo "----SERIAL------------"
+echo "----------------------"
+for data_size in ${data_sizes[@]}
+do
+	echo "----------------------"
+        echo "Data size: $data_size"
+	echo "----------------------"
+        # Serial samplesort
+        ./samplesort $data_size $num_range $samples_per_bucket
+done
+
+echo "----------------------"
+echo "------OPEN MP---------"
+echo "----------------------"
+for data_size in ${data_sizes[@]}
+do
+	echo "----------------------"
+        echo "Data size: $data_size"
+	echo "----------------------"
+        num_proc_array=(1 2 4 8 16)
+        for num_proc in ${num_proc_array[@]}
+        do
+                echo "----------------------"
+                echo "Number of processors: $num_proc"
+                echo "----------------------"
+                ./dw_open_mp_samplesort $num_proc $data_size $num_range $samples_per_bucket
+        done
+done
+
+echo "----------------------"
+echo "----------MPI---------"
+echo "----------------------"
+echo "MPI samplesort"
+for data_size in ${data_sizes[@]}
+do
+	echo "----------------------"
+        echo "Data size: $data_size"
+	echo "----------------------"
+        num_proc_array=(1 2 4 8 16)
+        for num_proc in ${num_proc_array[@]}
+        do
+                echo "----------------------"
+                echo "Number of processors: $num_proc"
+                echo "----------------------"
+		mpiexec -n $num_proc ./mpi_samplesort $data_size $num_range $samples_per_bucket
+        done
+done
+
+echo "----------------------"
+echo "-----CPP && P THREADS-"
+echo "----------------------"
+for data_size in ${data_sizes[@]}
+do
+	echo "----------------------"
+        echo "Data size: $data_size"
+	echo "----------------------"
+        num_proc_array=(1 2 4 8 16)
+        for num_proc in ${num_proc_array[@]}
+        do
+                echo "----------------------"
+                echo "Number of processors: $num_proc"
+                echo "----------------------"
+		./samplesortCPPThreads $num_proc $data_size $num_range $samples_per_bucket
+		./samplesortPThreads $num_proc $data_size $num_range $samples_per_bucket
+        done
+done
