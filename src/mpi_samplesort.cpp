@@ -349,6 +349,7 @@ int main(int argc, char** argv) {
 	MPI_Gatherv(&strBuff,strlen(strBuff),MPI_CHAR,outputString,str_buffer_sizes,displc,MPI_CHAR,0,MPI_COMM_WORLD);
 */
 
+	time2 = microtime();
 	if (proc_num == 0) {
 
 		//     sprintf(strBuff0 + strlen(strBuff0), "\nSorted Numbers (using parallel sample sort sort):\n");
@@ -374,7 +375,6 @@ int main(int argc, char** argv) {
 //	free(outputString);
 	free(inputSS);
 
-	time2 = microtime();
 	t = time2 - time1;
 
 	double max_time;
@@ -383,6 +383,7 @@ int main(int argc, char** argv) {
 
 	if (proc_num == 0) {
 		printf("(Max MPI process time: %0.3f sec)\n", max_time * 1e-6);
+    	printf("\nTime = %g us\n", t);
 	}
 
 	MPI_Finalize();

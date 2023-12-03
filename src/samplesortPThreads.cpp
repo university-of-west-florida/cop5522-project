@@ -216,30 +216,29 @@ void* generateVector(void* vArgs)
 
 int main(int argc, char** argv)
 {
-    if (argc < 4) {
-        fprintf(stderr, "USAGE: %s <numNums> <randomNumBound> <samplesPerBucket> (opt)<random seed>\n", argv[0]);
+    if (argc < 5) {
+        fprintf(stderr, "USAGE: %s <numOfProcessors> <numNums> <randomNumBound> <samplesPerBucket> (opt)<random seed>\n", argv[0]);
         exit(1);
     }
 
     double t, time1, time2;
 
     // Parsing arguments
-    int numNums = atoi(argv[1]);
-    int randomNumBound = atoi(argv[2]);
-    int samplesPerBucket = atoi(argv[3]);
+    int numNums = atoi(argv[2]);
+    int randomNumBound = atoi(argv[3]);
+    int samplesPerBucket = atoi(argv[4]);
 
     // Getting the current hardware's number of logical processors
-    int numOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
-    
+    int numOfProcessors = atoi(argv[1]);    
 
     std::vector<int> toSort(numNums);
 
     // Set seed if available
-    if (argc >= 5)
+    if (argc >= 6)
     {
         try
         {
-            srand(std::stoi(argv[4]));
+            srand(std::stoi(argv[5]));
             // Serially add in random numbers to the vector
             for (int i = 0; i < numNums; i++)
                 toSort[i] = getRandInt(0, randomNumBound);

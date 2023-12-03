@@ -148,7 +148,7 @@ int main(int argc, char** argv) {
     // Generating an array of numNums random numbers which are bounded by randomNumBound
     int inputNums[numNums];
     generateRandNums(inputNums, numNums, randomNumBound);
-    printArray(inputNums, numNums);
+    //printArray(inputNums, numNums);
 
     // Getting the current hardware's number of logical processors
     int numOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
@@ -160,7 +160,7 @@ int main(int argc, char** argv) {
     //bubblesort(inputNums, 0, numNums);
     time2 = microtime();
 
-    printArray(inputNums, numNums);
+    //printArray(inputNums, numNums);
 
     t = time2 - time1;
 

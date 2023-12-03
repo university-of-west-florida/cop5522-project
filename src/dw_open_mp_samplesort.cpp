@@ -289,6 +289,7 @@ shared(arrayIn, arraySize, comm_size, splitters, numOfBuckets, bucketSizes, buck
 		}
 	}
 
+	time2 = microtime();
 	//-------------------------------------------//
 
 	printf("\n------------------------------------------------------------------\n");
@@ -298,10 +299,10 @@ shared(arrayIn, arraySize, comm_size, splitters, numOfBuckets, bucketSizes, buck
 	printf("Sort successful: %s\t\t\t\t\t", sort_check(arrayIn, arraySize) ? "TRUE" : "FALSE");
 	free(arrayIn);
 
-	time2 = microtime();
 	t = time2 - time1;
 
 	printf("(Process 0 time: %0.3f sec)\n", t * 1e-6);
+    printf("\nTime = %g us\n", t);
 
 	return 0;
 }
