@@ -1,7 +1,9 @@
 CC=g++
 CFLAG= -Wall -I. -O0 -fopenmp -lm
+MPICC=mpic++
+MPICFLAG= -Wall -I. -O0
 
-TARGETS=samplesort open_mp_samplesort dw_open_mp_samplesort
+TARGETS=samplesort open_mp_samplesort dw_open_mp_samplesort mpi_samplesort
 
 all: $(TARGETS)
 
@@ -25,6 +27,15 @@ open_mp.o: open_mp.cpp
 
 microtime.o: microtime.cpp microtime.h
 	$(CC) $(CFLAG) -g3 -c $<
+
+mpi_samplesort: mpi_samplesort.o mpi_microtime.o
+	$(MPICC) -g3 -o $@ $^
+
+mpi_samplesort.o: mpi_samplesort.cpp microtime.h
+	$(MPICC) $(MPICFLAG) -g3 -c $<
+
+mpi_microtime.o: microtime.cpp microtime.h
+	$(MPICC) $(MPICFLAG) -g3 -c $<
 
 clean:
 	rm -f *.o *~ core $(TARGETS)
