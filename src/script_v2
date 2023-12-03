@@ -62,7 +62,7 @@ do
 done
 
 echo "----------------------"
-echo "-----CPP && P THREADS-"
+echo "-----CPP THREADS------"
 echo "----------------------"
 for data_size in ${data_sizes[@]}
 do
@@ -76,6 +76,23 @@ do
                 echo "Number of processors: $num_proc"
                 echo "----------------------"
 		./samplesortCPPThreads $num_proc $data_size $num_range $samples_per_bucket
+        done
+done
+
+echo "----------------------"
+echo "-----P THREADS--------"
+echo "----------------------"
+for data_size in ${data_sizes[@]}
+do
+	echo "----------------------"
+        echo "Data size: $data_size"
+	echo "----------------------"
+        num_proc_array=(1 2 4 8 16)
+        for num_proc in ${num_proc_array[@]}
+        do
+                echo "----------------------"
+                echo "Number of processors: $num_proc"
+                echo "----------------------"
 		./samplesortPThreads $num_proc $data_size $num_range $samples_per_bucket
         done
 done
