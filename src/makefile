@@ -27,13 +27,13 @@ open_mp.o: open_mp.cpp
 	$(CC) $(CFLAG) -fopenmp -g3 -c $<  # Add -fopenmp flag
 
 samplesortCPPThreads: samplesortCPPThreads.o microtime.o
-	$(CC) -g3 -o $@ $^
+	$(CC) $(PTHREADCFLAG) -g3 -o $@ $^
 
 samplesortCPPThreads.o: samplesortCPPThreads.cpp microtime.h samplesortCPPThreads.hpp
 	$(CC) $(PTHREADCFLAG) -g3 -c $<
 
 samplesortPThreads: samplesortPThreads.o microtime.o
-	$(CC) -g3 -o $@ $^
+	$(CC) $(PTHREADCFLAG) -g3 -o $@ $^
 
 samplesortPThreads.o: samplesortPThreads.cpp microtime.h samplesortPThreads.hpp
 	$(CC) $(PTHREADCFLAG) -g3 -c $<
