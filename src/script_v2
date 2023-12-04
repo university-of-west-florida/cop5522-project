@@ -82,7 +82,7 @@ do
                 echo "----------------------"
                 echo "Number of processors: $num_proc"
                 echo "----------------------"
-	# FIX INPUT ARG's #	./samplesortCPPThreads $num_proc $data_size $num_range $samples_per_bucket
+	# FIX INPUT ARG's #	./samplesortCPPThreads $data_size $num_range $samples_per_bucket 1 $num_proc
         done
 done
 
@@ -100,7 +100,7 @@ do
                 echo "----------------------"
                 echo "Number of processors: $num_proc"
                 echo "----------------------"
-	# FIX INPUT ARG's #	./samplesortPThreads $num_proc $data_size $num_range $samples_per_bucket
+	# FIX INPUT ARG's #	./samplesortPThreads $data_size $num_range $samples_per_bucket 1 $num_proc
         done
 done
 

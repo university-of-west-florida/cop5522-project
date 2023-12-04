@@ -38,11 +38,11 @@ do
                 echo "----------------------"
 
                 echo "C++ Threads samplesort"
-                ./samplesortCPPThreads $num_proc $data_size $num_range $samples_per_bucket
+                ./samplesortCPPThreads $data_size $num_range $samples_per_bucket 1 $num_proc
                 echo "----------------------"
 
                 echo "Pthreads samplesort"
-                ./samplesortPThreads $num_proc $data_size $num_range $samples_per_bucket
+                ./samplesortPThreads $data_size $num_range $samples_per_bucket 1 $num_proc 
                 echo "----------------------"
 
                 dur=$(echo "$(date +%s.%N) - $start" | bc); \
