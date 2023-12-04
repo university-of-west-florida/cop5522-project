@@ -36,15 +36,15 @@ void* buildBuckets(void* vArgs)
         bool wasTooBig = false;
         bool wasTooSmall = false;
 
-        for (int i = 0; i < numOfBuckets; i++)
+        for (int j = 0; j < numOfBuckets; j++)
         {
-            if (valToSort < (*splitters)[i][0])
+            if (valToSort < (*splitters)[j][0])
             {
-                if (wasTooBig || i == 0)
+                if (wasTooBig || j == 0)
                 {
                     pthread_mutex_lock(mtx);
-                    (*splitters)[i][0] = valToSort;
-                    (*buckets)[i].push_back(valToSort);
+                    (*splitters)[j][0] = valToSort;
+                    (*buckets)[j].push_back(valToSort);
                     pthread_mutex_unlock(mtx);
                     break;
                 }
@@ -53,13 +53,13 @@ void* buildBuckets(void* vArgs)
                     wasTooSmall = true;
                 }
             }
-            else if (valToSort > (*splitters)[i][samplesPerBucket - 1])
+            else if (valToSort > (*splitters)[j][samplesPerBucket - 1])
             {
-                if (wasTooSmall || i == numOfBuckets - 1)
+                if (wasTooSmall || j == numOfBuckets - 1)
                 {
                     pthread_mutex_lock(mtx);
-                    (*splitters)[i][samplesPerBucket - 1] = valToSort;
-                    (*buckets)[i].push_back(valToSort);
+                    (*splitters)[j][samplesPerBucket - 1] = valToSort;
+                    (*buckets)[j].push_back(valToSort);
                     pthread_mutex_unlock(mtx);
                     break;
                 }
@@ -71,7 +71,7 @@ void* buildBuckets(void* vArgs)
             else
             {
                 pthread_mutex_lock(mtx);
-                (*buckets)[i].push_back(valToSort);
+                (*buckets)[j].push_back(valToSort);
                 pthread_mutex_unlock(mtx);
                 break;
             }
