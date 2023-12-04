@@ -1,10 +1,16 @@
-#include "samplesort.h"
+#include <microtime.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <vector>
+#include <time.h>
+#include <omp.h>
 
 void printArray(int inputNums[], int numNums) {
     printf("Array Values:\n\t");
     int i;
-    for (i = 0; i < numNums; ++i)
-        printf("%d ", inputNums[i]);
+    for(i = 0; i < numNums; ++i)
+        printf ("%d ",inputNums[i]);
     printf("\n\n");
 }
 
@@ -13,17 +19,17 @@ void generateRandNums(int inputNums[], int numNums, int randomNumBound) {
     // Init random number generator the assign them with the specified bound
     int i;
     srand(time(0));
-    for (i = 0; i < numNums; ++i)
+    for(i = 0; i < numNums; ++i)
         inputNums[i] = rand() % randomNumBound;
 }
 
 // https://stackoverflow.com/questions/17655748/bubble-sort-algorithm-in-c
 // This can be used to compare to if you want. Samplesort is MUCH faster on big sorts
 void bubblesort(int inputNums[], int start, int end) {
-    int i, j, temp;
-    for (i = start; i < end - 1; ++i) {
-        for (j = start; j < start + end - i - 1; ++j) {
-            if (inputNums[j] > inputNums[j + 1]) {
+    int i,j,temp;
+    for(i = start; i < end - 1; ++i) {
+        for(j = start; j < start + end - i - 1; ++j) {
+            if(inputNums[j] > inputNums[j + 1]) {
                 temp = inputNums[j + 1];
                 inputNums[j + 1] = inputNums[j];
                 inputNums[j] = temp;
@@ -57,8 +63,8 @@ void samplesort(int inputNums[], int start, int end, int numOfBuckets, int sampl
 
     // STEP 1
     // If there are not enough inputNums to take the quantity of samples per bucket, then just set samplesPerBucket to 1
-    if (numOfBuckets * samplesPerBucket > numNums) {
-        if (numNums / numOfBuckets >= 1) {
+    if(numOfBuckets * samplesPerBucket > numNums) {
+        if(numNums / numOfBuckets >= 1) {
             samplesPerBucket = 1;
         }
         // If there are fewer inputNums than specified numOfBuckets, then just bubblesort the rest bc it is likely a small set left
@@ -71,15 +77,15 @@ void samplesort(int inputNums[], int start, int end, int numOfBuckets, int sampl
     // STEP 2
     // Creating an array of samples so that we can find pivot points for the algorithm
     int sortedSamples[(numOfBuckets - 1) * samplesPerBucket];
-    for (i = start; i < start + (numOfBuckets - 1) * samplesPerBucket; ++i)
+    for(i = start; i < start + (numOfBuckets - 1) * samplesPerBucket; ++i)
         sortedSamples[i - start] = inputNums[i];
 
     // Sorting the collection of samples with bubble sort
     bubblesort(sortedSamples, 0, (numOfBuckets - 1) * samplesPerBucket);
-
+    
     // Condensing the sortedSamples into just splitters between the buckets
     int splitters[numOfBuckets - 1];
-    for (i = 0; i < numOfBuckets - 1; ++i)
+    for(i = 0; i < numOfBuckets - 1; ++i)
         splitters[i] = sortedSamples[i * samplesPerBucket];
 
     // STEP 3
@@ -87,18 +93,22 @@ void samplesort(int inputNums[], int start, int end, int numOfBuckets, int sampl
     // NOTE: The initial double nesting of for loops is not necessary for serial purposes. I could have made the first
     //        two for loops into a single for loop, but I think it will be easier to parallelize it when set up this way
     std::vector<int> buckets[numOfBuckets];
-    // This breaks the initial inputNums into equal segments, then loops through each value and puts it into the bucket it belongs to
+
+    // Use OpenMP to parallelize the distribution of values into buckets
+    #pragma omp parallel for shared(inputNums, splitters, buckets) private(i, j, k)
     for (i = 0; i < numOfBuckets; ++i) {
         for (j = start + (i * (numNums / numOfBuckets)); j < start + ((i + 1) * (numNums / numOfBuckets)); ++j) {
-            // Looping through to check which bucket the current value belongs to, 
-            // then pushing it into the bucket if it falls in that bound
             for (k = 0; k < numOfBuckets - 1; ++k) {
                 if (inputNums[j] <= splitters[k]) {
+                    // Use private index for each thread to avoid race conditions
+                    int privateIndex = buckets[k].size();
                     buckets[k].push_back(inputNums[j]);
                     break;
                 }
-                if (k == numOfBuckets - 2)
+                if (k == numOfBuckets - 2) {
+                    int privateIndex = buckets[numOfBuckets - 1].size();
                     buckets[numOfBuckets - 1].push_back(inputNums[j]);
+                }
             }
         }
     }
@@ -107,13 +117,13 @@ void samplesort(int inputNums[], int start, int end, int numOfBuckets, int sampl
     // The inner for loop is the same as above bc it just sorts the value in question into the right bucket
     // If you have 20 buckets, but 23 values in the array, the above loop will handle the first 20 values
     // and this loop will handle the remaining three bc they are kinda outliers
-    for (i = start + numNums - (numNums % numOfBuckets); i < end; ++i) {
-        for (k = 0; k < numOfBuckets - 1; ++k) {
-            if (inputNums[i] <= splitters[k]) {
+    for(i = start + numNums - (numNums % numOfBuckets); i < end; ++i) {
+        for(k = 0; k < numOfBuckets - 1; ++k) {
+            if(inputNums[i] <= splitters[k]) {
                 buckets[k].push_back(inputNums[i]);
                 break;
             }
-            if (k == numOfBuckets - 2)
+            if(k == numOfBuckets - 2)
                 buckets[numOfBuckets - 1].push_back(inputNums[i]);
         }
     }
@@ -121,15 +131,34 @@ void samplesort(int inputNums[], int start, int end, int numOfBuckets, int sampl
     // STEP 4
     // Goes one-by-one through each bucket and copies their values into inputNums
     int runningIndex = start;
-    for (i = 0; i < numOfBuckets; ++i) {
-        int bucketSize = buckets[i].size();
-        for (j = 0; j < bucketSize; ++j)
-            inputNums[runningIndex + j] = buckets[i].at(j);
-        // Once the values of a bucket are copied into inputNums, we
-        // recursively call samplesort to sort those values in place.
-        samplesort(inputNums, runningIndex, runningIndex + bucketSize, numOfBuckets, samplesPerBucket);
-        runningIndex += bucketSize;
+
+    // Use OpenMP to parallelize the copying back and recursive sorting of buckets
+    #pragma omp parallel sections
+    {
+        // Parallelize the copying back of values into inputNums
+        #pragma omp section
+        {
+            for (i = 0; i < numOfBuckets; ++i) {
+                int bucketSize = buckets[i].size();
+                int privateRunningIndex = runningIndex;
+                for (j = 0; j < bucketSize; ++j) {
+                    inputNums[privateRunningIndex + j] = buckets[i].at(j);
+                }
+                privateRunningIndex += bucketSize;
+            }
+        }
+
+        // Parallelize the recursive sorting of buckets
+        #pragma omp section
+        {
+            for (i = 0; i < numOfBuckets; ++i) {
+                int bucketSize = buckets[i].size();
+                samplesort(inputNums, runningIndex, runningIndex + bucketSize, numOfBuckets, samplesPerBucket);
+                runningIndex += bucketSize;
+            }
+        }        
     }
+
 }
 
 int main(int argc, char** argv) {
@@ -148,7 +177,7 @@ int main(int argc, char** argv) {
     // Generating an array of numNums random numbers which are bounded by randomNumBound
     int inputNums[numNums];
     generateRandNums(inputNums, numNums, randomNumBound);
-    //printArray(inputNums, numNums);
+    printArray(inputNums, numNums);
 
     // Getting the current hardware's number of logical processors
     int numOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
@@ -160,7 +189,7 @@ int main(int argc, char** argv) {
     //bubblesort(inputNums, 0, numNums);
     time2 = microtime();
 
-    //printArray(inputNums, numNums);
+    printArray(inputNums, numNums);
 
     t = time2 - time1;
 

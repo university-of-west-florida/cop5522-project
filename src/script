@@ -1,0 +1,52 @@
+#!/bin/bash
+make clean
+make
+
+#NOTE: must use "chmod +x script" to make script executable in linux terminal
+
+data_sizes=(100000 200000 400000)
+
+for data_size in ${data_sizes[@]}
+do
+        echo "Data size: $data_size"
+        num_range=$(( $data_size * 2 ))
+        samples_per_bucket=$(( $data_size / 10 ))
+        
+        echo "Serial samplesort"
+        echo "Number range: $num_range"
+        echo "Samples per bucket: $samples_per_bucket"
+        # Serial samplesort
+        ./samplesort $data_size $num_range $samples_per_bucket
+
+        # Parallel samplesort
+        num_proc_array=(1 2 4 8) #12 16 20)
+
+        echo "Parallel Samplesort"
+        for num_proc in ${num_proc_array[@]}
+        do
+                samples_per_bucket=$(( $data_size / $num_proc ))
+                echo "Number of processors: $num_proc"
+                echo "----------------------"
+                start=$(date +%s.%N); \
+
+                echo "OpenMP samplesort"
+                ./dw_open_mp_samplesort $num_proc $data_size $num_range $samples_per_bucket
+                echo "----------------------"
+
+                echo "MPI samplesort"
+                mpiexec -n $num_proc ./mpi_samplesort $data_size $num_range $samples_per_bucket
+                echo "----------------------"
+
+                echo "C++ Threads samplesort"
+                ./samplesortCPPThreads $num_proc $data_size $num_range $samples_per_bucket
+                echo "----------------------"
+
+                echo "Pthreads samplesort"
+                ./samplesortPThreads $num_proc $data_size $num_range $samples_per_bucket
+                echo "----------------------"
+
+                dur=$(echo "$(date +%s.%N) - $start" | bc); \
+
+                printf "Overall Execution time: %.6f seconds\n\n" $dur
+        done
+done

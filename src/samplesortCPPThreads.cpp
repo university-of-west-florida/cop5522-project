@@ -89,6 +89,7 @@ void samplesort(std::vector<int>* toSort, int samplesPerBucket, int numOfBuckets
     for (int i = 0; i < samplesPerBucket * numOfBuckets - 1; i++)
     {
         int val = (*toSort)[i * (toSort->size() / (samplesPerBucket * numOfBuckets))];
+        //int val = (*toSort)[i * (toSort->size() / (samplesPerBucket * numOfBuckets))];
         samples.push_back(val);
     }
     samples.push_back((*toSort)[toSort->size() - 1]);
@@ -176,33 +177,33 @@ int main(int argc, char** argv)
     }
     else
     {
-        // Getting the current hardware's number of logical processors
+    // Getting the current hardware's number of logical processors
         numOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
     }
     cout << "Numofprocessors = " << to_string(numOfProcessors) << endl;
 
 
-    vector<int> toSort(numNums);
+    std::vector<int> toSort(numNums);
 
     // Set seed if available
     if (argc >= 5)
     {
         if (string(argv[4]) != "-1")
+    {
+        try
         {
-            try
-            {
                 srand(stoi(argv[4]));
-                // Serially add in random numbers to the vector
-                for (int i = 0; i < numNums; i++)
-                    toSort[i] = getRandInt(0, randomNumBound);
-            }
-            catch (...)
-            {
-                // Value entered is not an int -- maybe alert user?
-                cout << "ERROR: Entered invalid seed" << endl;
-                exit(1);
-            }
+            // Serially add in random numbers to the vector
+            for (int i = 0; i < numNums; i++)
+                toSort[i] = getRandInt(0, randomNumBound);
         }
+        catch (...)
+        {
+            // Value entered is not an int -- maybe alert user?
+            std::cout << "ERROR: Entered invalid seed" << std::endl;
+            exit(1);
+        }
+    }
     }
     // Else, use threads to speed up the building of the vector with extra random elements
     else
