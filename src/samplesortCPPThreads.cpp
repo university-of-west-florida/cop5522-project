@@ -4,7 +4,7 @@ using namespace std;
 
 void printVector(std::vector<int> vec)
 {
-    for (int i = 0; i < vec.size(); i++)
+    for (long unsigned int i = 0; i < vec.size(); i++)
     {
         std::cout << std::to_string(i) << ": " << std::to_string(vec[i]) << "\n";
     }
@@ -111,10 +111,13 @@ void samplesort(std::vector<int>* toSort, int samplesPerBucket, int numOfBuckets
 
 
     std::vector<std::vector<int>> buckets(numOfBuckets);
-    for (long long i = 0; i < numProcessors; i++)
+    for (long long i = 0; i < 1; i++)
     {
-        threads.push_back(new std::thread(buildBuckets, toSort, &buckets, &splitters, static_cast<long long> (i * n / numProcessors),
-            static_cast<long long> (n / numProcessors), numOfBuckets, samplesPerBucket, &mtx));
+        //threads.push_back(new std::thread(buildBuckets, toSort, &buckets, &splitters, static_cast<long long> (i * n / numProcessors),
+        //    static_cast<long long> (n / numProcessors), numOfBuckets, samplesPerBucket, &mtx));
+
+        buildBuckets(toSort, &buckets, &splitters, static_cast<long long> (i * n / 1),
+                     static_cast<long long> (n / 1), numOfBuckets, samplesPerBucket, &mtx);
     }
 
     for (auto t : threads)
@@ -154,29 +157,42 @@ void generateVector(std::vector<int>* vec, long long offset, long long indexRang
 
 int main(int argc, char** argv)
 {
-    if (argc < 5) {
-        fprintf(stderr, "USAGE: %s <numOfProcessors> <numNums> <randomNumBound> <samplesPerBucket> (opt)<random seed>\n", argv[0]);
+    if (argc < 4) {
+        fprintf(stderr, "USAGE: %s <numNums> <randomNumBound> <samplesPerBucket> (opt)<random seed>\n", argv[0]);
         exit(1);
     }
 
     double t, time1, time2;
 
     // Parsing arguments
-    int numNums = atoi(argv[2]);
-    int randomNumBound = atoi(argv[3]);
-    int samplesPerBucket = atoi(argv[4]);
+    int numNums = atoi(argv[1]);
+    int randomNumBound = atoi(argv[2]);
+    int samplesPerBucket = atoi(argv[3]);
+    int numOfProcessors;
 
+
+    if (argc >= 6)
+    {
+        numOfProcessors = stoi(argv[5]);
+    }
+    else
+    {
     // Getting the current hardware's number of logical processors
-    int numOfProcessors = atoi(argv[1]);
+        numOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
+    }
+    cout << "Numofprocessors = " << to_string(numOfProcessors) << endl;
+
 
     std::vector<int> toSort(numNums);
 
     // Set seed if available
-    if (argc >= 6)
+    if (argc >= 5)
+    {
+        if (string(argv[4]) != "-1")
     {
         try
         {
-            srand(std::stoi(argv[5]));
+                srand(stoi(argv[4]));
             // Serially add in random numbers to the vector
             for (int i = 0; i < numNums; i++)
                 toSort[i] = getRandInt(0, randomNumBound);
@@ -187,6 +203,7 @@ int main(int argc, char** argv)
             std::cout << "ERROR: Entered invalid seed" << std::endl;
             exit(1);
         }
+    }
     }
     // Else, use threads to speed up the building of the vector with extra random elements
     else
