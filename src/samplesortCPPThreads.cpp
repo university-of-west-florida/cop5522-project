@@ -4,7 +4,7 @@ using namespace std;
 
 void printVector(std::vector<int> vec)
 {
-    for (int i = 0; i < vec.size(); i++)
+    for (long unsigned int i = 0; i < vec.size(); i++)
     {
         std::cout << std::to_string(i) << ": " << std::to_string(vec[i]) << "\n";
     }
@@ -89,7 +89,6 @@ void samplesort(std::vector<int>* toSort, int samplesPerBucket, int numOfBuckets
     for (int i = 0; i < samplesPerBucket * numOfBuckets - 1; i++)
     {
         int val = (*toSort)[i * (toSort->size() / (samplesPerBucket * numOfBuckets))];
-        //int val = (*toSort)[i * (toSort->size() / (samplesPerBucket * numOfBuckets))];
         samples.push_back(val);
     }
     samples.push_back((*toSort)[toSort->size() - 1]);
@@ -111,10 +110,13 @@ void samplesort(std::vector<int>* toSort, int samplesPerBucket, int numOfBuckets
 
 
     std::vector<std::vector<int>> buckets(numOfBuckets);
-    for (long long i = 0; i < numProcessors; i++)
+    for (long long i = 0; i < 1; i++)
     {
-        threads.push_back(new std::thread(buildBuckets, toSort, &buckets, &splitters, static_cast<long long> (i * n / numProcessors),
-            static_cast<long long> (n / numProcessors), numOfBuckets, samplesPerBucket, &mtx));
+        //threads.push_back(new std::thread(buildBuckets, toSort, &buckets, &splitters, static_cast<long long> (i * n / numProcessors),
+        //    static_cast<long long> (n / numProcessors), numOfBuckets, samplesPerBucket, &mtx));
+
+        buildBuckets(toSort, &buckets, &splitters, static_cast<long long> (i * n / 1),
+                     static_cast<long long> (n / 1), numOfBuckets, samplesPerBucket, &mtx);
     }
 
     for (auto t : threads)
@@ -165,27 +167,41 @@ int main(int argc, char** argv)
     int numNums = atoi(argv[1]);
     int randomNumBound = atoi(argv[2]);
     int samplesPerBucket = atoi(argv[3]);
+    int numOfProcessors;
 
-    // Getting the current hardware's number of logical processors
-    int numOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
 
-    std::vector<int> toSort(numNums);
+    if (argc >= 6)
+    {
+        numOfProcessors = stoi(argv[5]);
+    }
+    else
+    {
+        // Getting the current hardware's number of logical processors
+        numOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
+    }
+    cout << "Numofprocessors = " << to_string(numOfProcessors) << endl;
+
+
+    vector<int> toSort(numNums);
 
     // Set seed if available
     if (argc >= 5)
     {
-        try
+        if (string(argv[4]) != "-1")
         {
-            srand(std::stoi(argv[4]));
-            // Serially add in random numbers to the vector
-            for (int i = 0; i < numNums; i++)
-                toSort[i] = getRandInt(0, randomNumBound);
-        }
-        catch (...)
-        {
-            // Value entered is not an int -- maybe alert user?
-            std::cout << "ERROR: Entered invalid seed" << std::endl;
-            exit(1);
+            try
+            {
+                srand(stoi(argv[4]));
+                // Serially add in random numbers to the vector
+                for (int i = 0; i < numNums; i++)
+                    toSort[i] = getRandInt(0, randomNumBound);
+            }
+            catch (...)
+            {
+                // Value entered is not an int -- maybe alert user?
+                cout << "ERROR: Entered invalid seed" << endl;
+                exit(1);
+            }
         }
     }
     // Else, use threads to speed up the building of the vector with extra random elements

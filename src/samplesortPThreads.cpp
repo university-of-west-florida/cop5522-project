@@ -2,13 +2,13 @@
 
 using namespace std;
 
-void printVector(std::vector<int> vec)
+void printVector(vector<int> vec)
 {
-    for (int i = 0; i < vec.size(); i++)
+    for (long unsigned int i = 0; i < vec.size(); i++)
     {
-        std::cout << std::to_string(i) << ": " << std::to_string(vec[i]) << "\n";
+        cout << to_string(i) << ": " << to_string(vec[i]) << "\n";
     }
-    std::cout << std::endl;
+    cout << endl;
 }
 
 int getRandInt(int min, int max)
@@ -21,14 +21,14 @@ int getRandInt(int min, int max)
 void* buildBuckets(void* vArgs)
 {
     buildBucketsArgs* bArgs = (buildBucketsArgs*)vArgs;
-    std::vector<int>* valsToSort             = bArgs->valsToSort;
-    std::vector<std::vector<int>>* buckets   = bArgs->buckets;
-    std::vector<std::vector<int>>* splitters = bArgs->splitters;
-    long long offset                         = bArgs->offset;
-    long long indexRange                     = bArgs->indexRange;
-    int numOfBuckets                         = bArgs->numOfBuckets;
-    int samplesPerBucket                     = bArgs->samplesPerBucket;
-    pthread_mutex_t* mtx                     = bArgs->mtx;
+    vector<int>* valsToSort             = bArgs->valsToSort;
+    vector<vector<int>>* buckets        = bArgs->buckets;
+    vector<vector<int>>* splitters      = bArgs->splitters;
+    long long offset                    = bArgs->offset;
+    long long indexRange                = bArgs->indexRange;
+    int numOfBuckets                    = bArgs->numOfBuckets;
+    int samplesPerBucket                = bArgs->samplesPerBucket;
+    pthread_mutex_t* mtx                = bArgs->mtx;
 
     for (long long i = offset; i < offset + indexRange; i++)
     {
@@ -77,35 +77,38 @@ void* buildBuckets(void* vArgs)
             }
         }
     }
+
+    return nullptr;
 }
 
-void* sortAndCombine(void* vArgs)//std::vector<int>* bucket, std::vector<int>* putHere, long long offset, long long numToDo)
+void* sortAndCombine(void* vArgs)//vector<int>* bucket, vector<int>* putHere, long long offset, long long numToDo)
 {
     sortAndCombineArgs* sArgs = (sortAndCombineArgs*)vArgs;
 
-    std::vector<int>* bucket  = sArgs->bucket;
-    std::vector<int>* putHere = sArgs->putHere;
+    vector<int>* bucket  = sArgs->bucket;
+    vector<int>* putHere = sArgs->putHere;
     long long offset          = sArgs->offset;
     long long numToDo         = sArgs->numToDo;
 
     int index = 0;
-    std::sort(bucket->begin(), bucket->end());
+    sort(bucket->begin(), bucket->end());
     for (int i = offset; i < offset + numToDo; i++)
     {
         (*putHere)[i] = (*bucket)[index++];
     }
+
+    return nullptr;
 }
 
-void samplesort(std::vector<int>* toSort, int samplesPerBucket, int numOfBuckets)
+void samplesort(vector<int>* toSort, int samplesPerBucket, int numOfBuckets)
 {
-    std::vector<pthread_t*> threads;
+    vector<pthread_t*> threads;
     pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_init(&mtx, NULL);
     int n = toSort->size();
-    int numProcessors = numOfBuckets;
 
     // Get and sort samples
-    std::vector<int> samples;
+    vector<int> samples;
     for (int i = 0; i < samplesPerBucket * numOfBuckets - 1; i++)
     {
         int val = (*toSort)[i * (toSort->size() / (samplesPerBucket * numOfBuckets))];
@@ -113,14 +116,14 @@ void samplesort(std::vector<int>* toSort, int samplesPerBucket, int numOfBuckets
     }
     samples.push_back((*toSort)[toSort->size() - 1]);
 
-    std::sort(samples.begin(), samples.end());
+    sort(samples.begin(), samples.end());
 
 
     // Get splitters and build out starting buckets
-    std::vector<std::vector<int>> splitters;
+    vector<vector<int>> splitters;
     for (int i = 0; i < numOfBuckets; i++)
     {
-        std::vector<int> split;
+        vector<int> split;
         for (int j = 0; j < samplesPerBucket; j++)
         {
             split.push_back(samples[i * samplesPerBucket + j]);
@@ -129,27 +132,28 @@ void samplesort(std::vector<int>* toSort, int samplesPerBucket, int numOfBuckets
     }
 
     // Build out our buckets with our splitters
-    std::vector<std::vector<int>> buckets(numOfBuckets);
-    for (long long i = 0; i < numProcessors; i++)
+    vector<vector<int>> buckets(numOfBuckets);
+    for (long long i = 0; i < 1; i++)
     {
         buildBucketsArgs* bArgs = new buildBucketsArgs();
         bArgs->valsToSort       = toSort;
         bArgs->buckets          = &buckets;
         bArgs->splitters        = &splitters;
-        bArgs->offset           = static_cast<long long> (i * n / numProcessors);
-        bArgs->indexRange       = static_cast<long long> (n / numProcessors);
+        bArgs->offset           = static_cast<long long> (i * n / 1);
+        bArgs->indexRange       = static_cast<long long> (n / 1);
         bArgs->numOfBuckets     = numOfBuckets;
         bArgs->samplesPerBucket = samplesPerBucket;
         bArgs->mtx              = &mtx;
 
-        pthread_t* newThread = new pthread_t();
+        buildBuckets(static_cast<void*>(bArgs));
+        /*pthread_t* newThread = new pthread_t();
         threads.push_back(newThread);
 
         if (pthread_create(newThread, NULL, buildBuckets, static_cast<void*>(bArgs)))
         {
-            std::cout << "Pthread_create error: " << strerror(errno) << std::endl;
+            cout << "Pthread_create error: " << strerror(errno) << endl;
             exit(1);
-        }
+        }*/
     }
 
     // Wait for all threads to finish building out the buckets
@@ -163,11 +167,10 @@ void samplesort(std::vector<int>* toSort, int samplesPerBucket, int numOfBuckets
 
 
     // Sort and combine our buckets back to original vector
-    int index = 0;
     int lastBucketSize = 0;
     for (int i = 0; i < numOfBuckets; i++)
     {
-        std::vector<int>* bucket = &(buckets[i]);
+        vector<int>* bucket = &(buckets[i]);
         int numToDo = bucket->size();
 
         sortAndCombineArgs* sArgs = new sortAndCombineArgs();
@@ -181,7 +184,7 @@ void samplesort(std::vector<int>* toSort, int samplesPerBucket, int numOfBuckets
 
         if (pthread_create(newThread, NULL, sortAndCombine, static_cast<void*>(sArgs)))
         {
-            std::cout << "Pthread_create error: " << strerror(errno) << std::endl;
+            cout << "Pthread_create error: " << strerror(errno) << endl;
             exit(1);
         }
         lastBucketSize += buckets[i].size();
@@ -200,7 +203,7 @@ void samplesort(std::vector<int>* toSort, int samplesPerBucket, int numOfBuckets
 void* generateVector(void* vArgs)
 {
     generateVectorArgs* gArgs = (generateVectorArgs*)vArgs;
-    std:vector<int>* vec = gArgs->vec;
+    vector<int>* vec = gArgs->vec;
     long long offset     = gArgs->offset;
     long long indexRange = gArgs->indexRange;
     int randSeed         = gArgs->randSeed;
@@ -211,13 +214,15 @@ void* generateVector(void* vArgs)
     {
         (*vec)[i] = getRandInt(0, upperBound);
     }
+
+    return nullptr;
 }
 
 
 int main(int argc, char** argv)
 {
     if (argc < 4) {
-        fprintf(stderr, "USAGE: %s <numNums> <randomNumBound> <samplesPerBucket> (opt)<random seed>\n", argv[0]);
+        fprintf(stderr, "USAGE: %s <numNums> <randomNumBound> <samplesPerBucket> (opt)<random seed (-1 for none)> (opt)<number of processors>\n", argv[0]);
         exit(1);
     }
 
@@ -227,35 +232,48 @@ int main(int argc, char** argv)
     int numNums = atoi(argv[1]);
     int randomNumBound = atoi(argv[2]);
     int samplesPerBucket = atoi(argv[3]);
+    int numOfProcessors;
 
-    // Getting the current hardware's number of logical processors
-    int numOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
+
+    if (argc >= 6)
+    {
+        numOfProcessors = stoi(argv[5]);
+    }
+    else
+    {
+        // Getting the current hardware's number of logical processors
+        numOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
+    }
+    cout << "Numofprocessors = " << to_string(numOfProcessors) << endl;
     
 
-    std::vector<int> toSort(numNums);
+    vector<int> toSort(numNums);
 
     // Set seed if available
     if (argc >= 5)
     {
-        try
+        if (string(argv[4]) != "-1")
         {
-            srand(std::stoi(argv[4]));
-            // Serially add in random numbers to the vector
-            for (int i = 0; i < numNums; i++)
-                toSort[i] = getRandInt(0, randomNumBound);
-        }
-        catch (...)
-        {
-            // Value entered is not an int -- maybe alert user?
-            std::cout << "ERROR: Entered invalid seed" << std::endl;
-            exit(1);
+            try
+            {
+                srand(stoi(argv[4]));
+                // Serially add in random numbers to the vector
+                for (int i = 0; i < numNums; i++)
+                    toSort[i] = getRandInt(0, randomNumBound);
+            }
+            catch (...)
+            {
+                // Value entered is not an int -- maybe alert user?
+                cout << "ERROR: Entered invalid seed" << endl;
+                exit(1);
+            }
         }
     }
     // Else, use threads to speed up the building of the vector with extra random elements
     else
     {
         // Speed up the building of the sortable vector
-        std::vector<pthread_t*> assignThreads;
+        vector<pthread_t*> assignThreads;
         for (long long i = 0; i < numOfProcessors; i++)
         {
             // Perform additional randomization for the vector assignments or else we would just end up with a repeating pattern
@@ -273,7 +291,7 @@ int main(int argc, char** argv)
 
             if (pthread_create(newThread, NULL, generateVector, static_cast<void*>(gArgs)))
             {
-                std::cout << "Pthread_create error: " << strerror(errno) << std::endl;
+                cout << "Pthread_create error: " << strerror(errno) << endl;
                 exit(1);
             }
         }
@@ -300,17 +318,17 @@ int main(int argc, char** argv)
     // Determine if sort was successful
     bool success = true;
 
-    for (int i = 1; i < toSort.size(); i++)
+    for (unsigned long int i = 1; i < toSort.size(); i++)
     {
         if (toSort[i - 1] > toSort[i])
         {
             success = false;
-            std::cout << "Failed at i: " << std::to_string(i) << std::endl;
+            cout << "Failed at i: " << to_string(i) << endl;
         }
     }
 
-    std::string result = (success) ? "PASSED" : "FAILED";
-    std::cout << result << std::endl;
+    string result = (success) ? "PASSED" : "FAILED";
+    cout << result << endl;
 
     return 0;
 }
